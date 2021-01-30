@@ -844,7 +844,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
     	    			print dol_print_date($line2['date'], 'dayhour');
     	    			print '</td>';
     	    			print '<td></td>';
-    	    			print '<td class="right">'.$line2['qty'].'</td>';
+						print '<td class="right">'.$line2['qty'].'</td>';
+						if ($permissiontoupdatecost) print '<td></td>';
     	    			print '<td class="tdoverflowmax150">';
     	    			if ($line2['fk_warehouse'] > 0) {
     	    				$result = $tmpwarehouse->fetch($line2['fk_warehouse']);
@@ -1013,7 +1014,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
     					print dol_print_date($line2['date'], 'dayhour');
     					print '</td>';
     					print '<td></td>';
-    					print '<td class="right">'.$line2['qty'].'</td>';
+						print '<td class="right">'.$line2['qty'].'</td>';
+						if ($permissiontoupdatecost) print '<td></td>';
     					print '<td class="tdoverflowmax150">';
     					if ($line2['fk_warehouse'] > 0) {
     						$result = $tmpwarehouse->fetch($line2['fk_warehouse']);
