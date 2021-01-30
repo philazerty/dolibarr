@@ -200,6 +200,7 @@ if (empty($reshook))
 				$i = 1;
     			while (GETPOSTISSET('qty-'.$line->id.'-'.$i)) {
 					$qtytoprocess = price2num(GETPOST('qty-'.$line->id.'-'.$i));
+					$pricetoprocess = GETPOST('price-'.$line->id.'-'.$i) ? price2num(GETPOST('price-'.$line->id.'-'.$i)) : 0;
 
     				if ($qtytoprocess != 0) {
 						// Check warehouse is set if we should have to
@@ -221,7 +222,7 @@ if (empty($reshook))
 	    					// Record stock movement
 	    					$id_product_batch = 0;
 	    					$stockmove->origin = $object;
-	    					$idstockmove = $stockmove->livraison($user, $line->fk_product, GETPOST('idwarehouse-'.$line->id.'-'.$i), $qtytoprocess, 0, $labelmovement, dol_now(), '', '', GETPOST('batch-'.$line->id.'-'.$i), $id_product_batch, $codemovement);
+	    					$idstockmove = $stockmove->livraison($user, $line->fk_product, GETPOST('idwarehouse-'.$line->id.'-'.$i), $qtytoprocess, $pricetoprocess, $labelmovement, dol_now(), '', '', GETPOST('batch-'.$line->id.'-'.$i), $id_product_batch, $codemovement);
 	    					if ($idstockmove < 0) {
 	    						$error++;
 	    						setEventMessages($stockmove->error, $stockmove->errors, 'errors');
@@ -870,7 +871,10 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
     	    			$preselected = (GETPOSTISSET('qty-'.$line->id.'-'.$i) ? GETPOST('qty-'.$line->id.'-'.$i) : max(0, $line->qty - $alreadyconsumed));
     	    			if ($action == 'consumeorproduce' && !GETPOSTISSET('qty-'.$line->id.'-'.$i)) $preselected = 0;
 						print '<td class="right"><input type="text" class="width50 right" name="qty-'.$line->id.'-'.$i.'" value="'.$preselected.'"></td>';
-						if ($permissiontoupdatecost) print '<td></td>';
+						if ($permissiontoupdatecost) {
+							$preselected = (GETPOSTISSET('price-'.$line->id.'-'.$i) ? GETPOST('price-'.$line->id.'-'.$i) : price($tmpproduct->pmp));
+							print '<td class="right"><input type="text" class="width50 right" name="price-'.$line->id.'-'.$i.'" value="'.$preselected.'"></td>';
+						}
     	    			print '<td></td>';
     	    			print '<td>';
     	    			if ($tmpproduct->type == Product::TYPE_PRODUCT || !empty($conf->global->STOCK_SUPPORTS_SERVICES)) {
