@@ -352,6 +352,8 @@ class modMrp extends DolibarrModules
         }
 
         $sql = array(
+            "ALTER TABLE ".MAIN_DB_PREFIX."mrp_production ADD COLUMN origin_id integer AFTER fk_mo",
+            "ALTER TABLE ".MAIN_DB_PREFIX."mrp_production ADD COLUMN origin_type varchar(10) AFTER origin_id"
         	//"DELETE FROM ".MAIN_DB_PREFIX."document_model WHERE nom = '".$this->db->escape('standard')."' AND type = 'mo' AND entity = ".$conf->entity,
         	//"INSERT INTO ".MAIN_DB_PREFIX."document_model (nom, type, entity) VALUES('".$this->db->escape('standard')."', 'mo', ".$conf->entity.")"
         );

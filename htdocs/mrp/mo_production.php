@@ -171,7 +171,8 @@ if (empty($reshook))
     	$moline->fk_mo = $object->id;
     	$moline->qty = GETPOST('qtytoadd', 'int'); ;
     	$moline->fk_product = GETPOST('productidtoadd', 'int');
-    	$moline->role = 'toconsumef'; // free consume line
+    	$moline->role = 'toconsume';
+		$moline->origin_type = 'free'; // free consume line
     	$moline->position = 0;
 
     	$resultline = $moline->create($user, false); // Never use triggers here
@@ -200,7 +201,6 @@ if (empty($reshook))
 				$i = 1;
     			while (GETPOSTISSET('qty-'.$line->id.'-'.$i)) {
 					$qtytoprocess = price2num(GETPOST('qty-'.$line->id.'-'.$i));
-					$pricetoprocess = GETPOST('price-'.$line->id.'-'.$i) ? price2num(GETPOST('price-'.$line->id.'-'.$i)) : 0;
 
     				if ($qtytoprocess != 0) {
 						// Check warehouse is set if we should have to
@@ -222,7 +222,7 @@ if (empty($reshook))
 	    					// Record stock movement
 	    					$id_product_batch = 0;
 	    					$stockmove->origin = $object;
-	    					$idstockmove = $stockmove->livraison($user, $line->fk_product, GETPOST('idwarehouse-'.$line->id.'-'.$i), $qtytoprocess, $pricetoprocess, $labelmovement, dol_now(), '', '', GETPOST('batch-'.$line->id.'-'.$i), $id_product_batch, $codemovement);
+	    					$idstockmove = $stockmove->livraison($user, $line->fk_product, GETPOST('idwarehouse-'.$line->id.'-'.$i), $qtytoprocess, 0, $labelmovement, dol_now(), '', '', GETPOST('batch-'.$line->id.'-'.$i), $id_product_batch, $codemovement);
 	    					if ($idstockmove < 0) {
 	    						$error++;
 	    						setEventMessages($stockmove->error, $stockmove->errors, 'errors');
@@ -711,7 +711,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
     	print '<div class="fichehalfleft">';
     	print '<div class="clearboth"></div>';
 
-		if ($object->status == $object::STATUS_DRAFT || $object->status == $object::STATUS_VALIDATED) {
+		if ($object->status != $object::STATUS_PRODUCED && $object->status != $object::STATUS_CANCELED && $action != 'consumeorproduce' && $action != 'consumeandproduceall') {
 			$newlinetext = '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=addconsumeline">'.$langs->trans("AddNewConsumeLines").'</a>';
 		} else {
 			$newlinetext = '';
@@ -725,7 +725,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
     	print '<tr class="liste_titre">';
     	print '<td>'.$langs->trans("Product").'</td>';
 		print '<td class="right">'.$langs->trans("Qty").'</td>';
-		if ($permissiontoupdatecost) print '<td class="right">'.$langs->trans("PMPValue").'</td>';
+		if ($permissiontoupdatecost) print '<td class="right">'.$langs->trans("UnitCost").'</td>';
     	print '<td class="right">'.$langs->trans("QtyAlreadyConsumed").'</td>';
     	print '<td>';
     	if ($collapse || in_array($action, array('consumeorproduce', 'consumeandproduceall'))) print $langs->trans("Warehouse");
@@ -771,7 +771,9 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
     	    		$tmpproduct = new Product($db);
 					$tmpproduct->fetch($line->fk_product);
-					if (!empty($bomcost) && $line->role == 'toconsumef' && $object->qty > 0) {
+					$linecost = price2num($tmpproduct->pmp, 'MT');
+
+					if ($line->origin_type == 'free' && $object->qty > 0) {
 						// add free consume line cost to bomcost
 						require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.product.class.php';
 						$productFournisseur = new ProductFournisseur($db);
@@ -782,6 +784,12 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 							}
 						}
 						$bomcost += price2num(($line->qty * $linecost) / $object->qty, 'MT');
+					} elseif ($line->origin_id > 0 && $line->origin_type == 'bom' && $object->qty > 0) {
+						foreach ($bom->lines as $bomline) {
+							if ($bomline->id == $line->origin_id) {
+								$linecost = price2num(($line->qty * $bomline->unit_cost) / $object->qty, 'MT');
+							}
+						}
 					}
 
     	    		$arrayoflines = $object->fetchLinesLinked('consumed', $line->id);
@@ -804,7 +812,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 					print '</td>';
 					if ($permissiontoupdatecost) {
 						print '<td class="right nowraponall">';
-						print price($tmpproduct->pmp);
+						print price($linecost);
 						print '</td>';
 					}
     	    		print '<td class="right">';
@@ -871,10 +879,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
     	    			$preselected = (GETPOSTISSET('qty-'.$line->id.'-'.$i) ? GETPOST('qty-'.$line->id.'-'.$i) : max(0, $line->qty - $alreadyconsumed));
     	    			if ($action == 'consumeorproduce' && !GETPOSTISSET('qty-'.$line->id.'-'.$i)) $preselected = 0;
 						print '<td class="right"><input type="text" class="width50 right" name="qty-'.$line->id.'-'.$i.'" value="'.$preselected.'"></td>';
-						if ($permissiontoupdatecost) {
-							$preselected = (GETPOSTISSET('price-'.$line->id.'-'.$i) ? GETPOST('price-'.$line->id.'-'.$i) : price($tmpproduct->pmp));
-							print '<td class="right"><input type="text" class="width50 right" name="price-'.$line->id.'-'.$i.'" value="'.$preselected.'"></td>';
-						}
+						if ($permissiontoupdatecost) print '<td></td>';
     	    			print '<td></td>';
     	    			print '<td>';
     	    			if ($tmpproduct->type == Product::TYPE_PRODUCT || !empty($conf->global->STOCK_SUPPORTS_SERVICES)) {

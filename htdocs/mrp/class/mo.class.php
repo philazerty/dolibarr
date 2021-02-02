@@ -646,6 +646,8 @@ class Mo extends CommonObject
 							$moline = new MoLine($this->db);
 
 							$moline->fk_mo = $this->id;
+							$moline->origin_id = $line->id;
+							$moline->origin_type = 'bom';
 							if ($line->qty_frozen) {
 								$moline->qty = $line->qty; // Qty to consume does not depends on quantity to produce
 							} else {
@@ -1378,6 +1380,8 @@ class MoLine extends CommonObjectLine
 	public $fields = array(
 		'rowid' =>array('type'=>'integer', 'label'=>'ID', 'enabled'=>1, 'visible'=>-1, 'notnull'=>1, 'position'=>10),
 		'fk_mo' =>array('type'=>'integer', 'label'=>'Mo', 'enabled'=>1, 'visible'=>-1, 'notnull'=>1, 'position'=>15),
+		'origin_id' =>array('type'=>'integer', 'label'=>'Origin', 'enabled'=>1, 'visible'=>-1, 'notnull'=>0, 'position'=>17),
+		'origin_type' =>array('type'=>'varchar(10)', 'label'=>'Origin type', 'enabled'=>1, 'visible'=>-1, 'notnull'=>0, 'position'=>18),
 		'position' =>array('type'=>'integer', 'label'=>'Position', 'enabled'=>1, 'visible'=>-1, 'notnull'=>1, 'position'=>20),
 		'fk_product' =>array('type'=>'integer', 'label'=>'Product', 'enabled'=>1, 'visible'=>-1, 'notnull'=>1, 'position'=>25),
 		'fk_warehouse' =>array('type'=>'integer', 'label'=>'Warehouse', 'enabled'=>1, 'visible'=>-1, 'position'=>30),
@@ -1397,6 +1401,8 @@ class MoLine extends CommonObjectLine
 
 	public $rowid;
 	public $fk_mo;
+	public $origin_id;
+	public $origin_type;
 	public $position;
 	public $fk_product;
 	public $fk_warehouse;
